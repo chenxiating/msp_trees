@@ -15,7 +15,7 @@ TestLib::TestLib(bool displayMsg) {
 // --------------------------------------------
 int TestLib::begin(String header_) {
     Log.info("Beginning logger initialization");
-    // RTCsetup(); // ONLY USE DURING INITIAL SETUP!
+    RTCsetup(); // ONLY USE DURING INITIAL SETUP!
     rtc.begin();
     
     String id = System.deviceID();
@@ -30,11 +30,9 @@ int TestLib::begin(String header_) {
     Log.info(Header);
     if (Header.substring(0, 2) == "TC") {
         TCsetup();
-        // HERE NEED TO ADD CODE TO TURN ON THE HEATING.
     } else {
-        Serial.println("Set up for soil moisture and rain gauge");
-        RGsetup();
-        // Set up for soil moisture and rain gauge
+        Serial.println("Set up for soil moisture");
+        // RGsetup();
     }
 
     // //Sets up basic initialization required for the system
@@ -250,39 +248,51 @@ void TestLib::TCsetup() {
     mcp.enable(true);
 
     Serial.println(F("------------------------------"));
+
+
 }
 
-void TestLib::RGsetup() {
+// void TestLib::RGsetup() {
 //     pinMode(intPin, INPUT); // DEBUG!
 //     attachInterrupt(digitalPinToInterrupt(intPin), TestLib::RGtip, FALLING);
 //     pinMode(intPin, INPUT_PULLUP);
-}
+// }
 
-void TestLib::RGtip() {
-    static unsigned long TimeLocal = millis(); //Protect the system from rollover errors
-	if((millis() - TimeLocal) > Holdoff) {
-		TipCount++; //Increment global counter 
-	}
-	//Else do nothing
-	TimeLocal = millis(); //Update the local time
-}
+// void TestLib::logSoil(int logMinutes, int logTimes, String (*update)(void)){
+//     unsigned long currentMillis = millis();
+//     int logInterval = logMinutes * 1000 * 60;
+//   if(currentMillis - previousMillis > logInterval) {
+//     // save the last time you logged data
+//     previousMillis = currentMillis;   
+    
+//     // turn on relay pin
+//     digitalWrite(soilRelayPin, HIGH);
+//     String rain;
+//     String soil;
+//     soil = getSoilvoltage();
+//     Log.info("Soil: ");
+//     Serial.println(soil);
+//     rain = getRain();
+//     Log.info("Rain: ");
+//     Serial.println(rain);
+//     return soil+","+rain;
+//     if (ledState == LOW)
+//       ledState = HIGH;
+//     else
+//       ledState = LOW;
 
-String TestLib::getRain() {
-    float Val1 = TipCount*8.3;  //Account for volume per tip (mL)
-	TipCount = 0; //Clear count with each update 
-	return String(Val1);
-}
+//     // set the LED with the ledState of the variable:
+//     digitalWrite(ledPin, ledState);
+//   }
+// }
+
 
 void TestLib::heating(int val){
     pinMode(heatPin, OUTPUT);
-    analogWriteResolution(heatPin, 12);
-    // analogWrite(heatPin, val);
-    analogWrite(heatPin, val, 500);
-    pinMode(D5, OUTPUT);
-    digitalWrite(D5, HIGH);
-    analogWriteResolution(D5, 12);
-    analogWrite(D5,val,1);
-    Serial.println("Heating begins");
+    analogWrite(heatPin, val);
+    Serial.print(getTime());
+    Serial.println(" Heating begins and will continue for 10 min");
+    delay(10*60*1000); // Heating for 10 minutes
 }
 
 void TestLib::batTest()
@@ -360,6 +370,8 @@ float TestLib::getBatVoltage()
 	return BatVoltage;
 }
 
+
+
 double TestLib::getTCvoltage() 
 {
     Serial.print("ADC: "); Serial.print(mcp.readADC() * 2); Serial.println(" uV");
@@ -369,12 +381,16 @@ double TestLib::getTCvoltage()
     return TCvoltage;
 }
 
+void TestLib::Soilsetup(){
+    pinMode(soilRelayPin, OUTPUT);
+    delay(5*1000); // Wait 5 seconds for the excitation power
+}
+
 String TestLib::getSoilvoltage() 
 {
-    double topVolt = getVoltage(A0);
-    double midVolt = getVoltage(A1); 
-    double botVolt = getVoltage(A2);
-
+    double topVolt = getVoltage(topPinIn);
+    double midVolt = getVoltage(midPinIn); 
+    double botVolt = getVoltage(botPinIn);
     return String(topVolt) + "," + String(midVolt) + "," + String(botVolt);
 }
 
@@ -399,6 +415,14 @@ double TestLib::getVoltage(int pinInput)
 // 	if(Per > 100) return 100;  //Is this appropriate? Float voltage could be higher than specified and still be correct
 // 	return Per;
 // }
+
+void TestLib::heatingoff(){
+    analogWrite(heatPin,0);
+}
+
+void TestLib::Soiloff(){
+    digitalWrite(soilRelayPin,LOW);
+}
 
 void TestLib::dirsetup(){
     if (!SD.exists("Particle")) {

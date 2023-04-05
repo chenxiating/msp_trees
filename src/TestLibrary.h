@@ -30,12 +30,25 @@ class TestLib {
         String getTime();
         double getTCvoltage();
         String getSoilvoltage();
-        String getRain();
+
+        // Data logging
+        void logSoil(int logInterval, int logTimes, String (*update)(void));
+        void loopSap(int logInterval, int logTimes, String (*update)(void));
+
+        // String getRain();
         
         // Pin definitions
 		uint8_t SD_CS = 5;
         uint8_t BlueLED = 7;
         uint8_t intPin = TX;
+        uint8_t heatPin = A5;
+        uint8_t soilRelayPin = D7;      // DOUBLE CHECK RELAY PIN
+
+        // Heating and Excitation
+        void heating(int heatval);
+        void Soilsetup();
+        void heatingoff();
+        void Soiloff();
 
     private:
     
@@ -43,8 +56,15 @@ class TestLib {
         SdFat SD; 
         Adafruit_MCP9600 mcp;
 
-        const uint8_t chipSelect = 5;
-        const uint8_t heatPin = A0;
+        // Linwood (all 3), Orchard's Park (top and mid), Highland (top and top)
+        const uint8_t topPinIn = A0;
+        const uint8_t midPinIn = A1;
+        const uint8_t botPinIn = A2; 
+
+        // // Dayton's Bluff
+        // const uint8_t topPinIn = A1;
+        // const uint8_t midPinIn = A0;
+        // const uint8_t botPinIn = A2;
 
         const char* SN; //Used to store device serial number, 19 chars + null terminator
         String Header = "";
@@ -56,15 +76,14 @@ class TestLib {
         void SDsetup();
         void dirsetup();
         void TCsetup();
-        void RGsetup();
+        // void RGsetup();
 
         // Rain gauge
         volatile unsigned int TipCount = 0; //Global counter for tipping bucket 
         unsigned long Holdoff = 25; //25ms between bucket tips minimum
 
-        void heating(int val);
         double getVoltage(int pinInput);
-        void RGtip();
+        // void RGtip();
         static TestLib* selfPointer;
 
         void blinkGood();
