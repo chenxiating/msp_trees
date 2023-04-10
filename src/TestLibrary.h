@@ -34,8 +34,6 @@ class TestLib {
         // Data logging
         void logSoil(int logInterval, int logTimes, String (*update)(void));
         void loopSap(int logInterval, int logTimes, String (*update)(void));
-
-        // String getRain();
         
         // Pin definitions
 		uint8_t SD_CS = 5;

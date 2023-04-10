@@ -15,7 +15,7 @@ TestLib::TestLib(bool displayMsg) {
 // --------------------------------------------
 int TestLib::begin(String header_) {
     Log.info("Beginning logger initialization");
-    RTCsetup(); // ONLY USE DURING INITIAL SETUP!
+    // RTCsetup(); // ONLY USE DURING INITIAL SETUP!
     rtc.begin();
     
     String id = System.deviceID();
@@ -252,47 +252,12 @@ void TestLib::TCsetup() {
 
 }
 
-// void TestLib::RGsetup() {
-//     pinMode(intPin, INPUT); // DEBUG!
-//     attachInterrupt(digitalPinToInterrupt(intPin), TestLib::RGtip, FALLING);
-//     pinMode(intPin, INPUT_PULLUP);
-// }
-
-// void TestLib::logSoil(int logMinutes, int logTimes, String (*update)(void)){
-//     unsigned long currentMillis = millis();
-//     int logInterval = logMinutes * 1000 * 60;
-//   if(currentMillis - previousMillis > logInterval) {
-//     // save the last time you logged data
-//     previousMillis = currentMillis;   
-    
-//     // turn on relay pin
-//     digitalWrite(soilRelayPin, HIGH);
-//     String rain;
-//     String soil;
-//     soil = getSoilvoltage();
-//     Log.info("Soil: ");
-//     Serial.println(soil);
-//     rain = getRain();
-//     Log.info("Rain: ");
-//     Serial.println(rain);
-//     return soil+","+rain;
-//     if (ledState == LOW)
-//       ledState = HIGH;
-//     else
-//       ledState = LOW;
-
-//     // set the LED with the ledState of the variable:
-//     digitalWrite(ledPin, ledState);
-//   }
-// }
-
-
 void TestLib::heating(int val){
     pinMode(heatPin, OUTPUT);
     analogWrite(heatPin, val);
     Serial.print(getTime());
-    Serial.println(" Heating begins and will continue for 10 min");
-    delay(10*60*1000); // Heating for 10 minutes
+    Serial.println(" Heating begins and will continue for 20 min");
+    delay(20*60*1000); // Heating for 10 minutes
 }
 
 void TestLib::batTest()
@@ -383,6 +348,7 @@ double TestLib::getTCvoltage()
 
 void TestLib::Soilsetup(){
     pinMode(soilRelayPin, OUTPUT);
+    digitalWrite(soilRelayPin,HIGH); // HIGH - turns on heating bc it's "Normally On"
     delay(5*1000); // Wait 5 seconds for the excitation power
 }
 
@@ -459,7 +425,9 @@ void TestLib::initLogFile()
       sprintf(NumCharArray, "%05d", FileNum);
       (FileName + String(NumCharArray) + ".txt").toCharArray(FileNameC, 13);
     }
-    Serial.print("FileNameC: ");
+    LogTimeDate = getTime();
+    Serial.print(LogTimeDate);
+    Serial.print(" FileNameC: ");
     Serial.println(FileNameC);
   	String InitData = " SN = " + System.deviceID();  //Make string of onboard characteristics
   	logStr(InitData); //Log as first line of data

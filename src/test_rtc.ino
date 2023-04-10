@@ -15,7 +15,7 @@ SdFat SD;
 // Rain gauge
 volatile unsigned int TipCount = 0; //Global counter for tipping bucket 
 unsigned long Holdoff = 25; //25ms between bucket tips minimum
-const uint8_t intPin = TX;
+const uint8_t intPin = D2; //TX for some, D2 for Orchard
 
 // Heating
 int heatval = 126;      // This depends on the heater wire's resistance
@@ -33,6 +33,7 @@ void setup() {
   Serial.println("Finish initialization!"); // DEBUG!!
   MyLogger.initLogFile();
   pinMode(intPin, INPUT); // For rain gauge
+  RGsetup();
 }
 
 void loop() {
@@ -63,6 +64,7 @@ void logData(unsigned int logMinutes, int logTimes) {
 
 void excitation(){
   digitalWrite(D7, HIGH);
+  Serial.println("Power ON");
   if (Header.substring(0, 2) == "TC") {
     MyLogger.heating(heatval); // default to heat for 20 minutes in the cpp file. 
   } else {
@@ -77,7 +79,7 @@ void poweroff(){
     MyLogger.Soiloff(); // turn off relay pin
   }
   digitalWrite(D7, LOW);
-  Serial.println("Power off");
+  Serial.println("Power OFF");
 
 }
 
@@ -90,15 +92,14 @@ String calc(){
     String rain;
     String soil;
     soil = MyLogger.getSoilvoltage();
-    Log.info("Soil: ");
-    Serial.println(soil);
+    // Log.info("Soil: ");
+    // Serial.println(soil);
     rain = getRain();
-    Log.info("Rain: ");
-    Serial.println(rain);
+    // Log.info("Rain: ");
+    // Serial.println(rain);
     return soil+","+rain;
   }
 }
-
 
 // RAIN GAUGE CODE
 void RGsetup() {
@@ -118,7 +119,7 @@ void tip()
 
 String getRain() 
 {
-	float Val1 = TipCount*8.3;  //Account for volume per tip (mL)
+	float Val1 = TipCount*0.01;  //Account per tip (in)
 	TipCount = 0; //Clear count with each update 
 	return String(Val1);
 }
