@@ -5,8 +5,6 @@ TestLib* TestLib::selfPointer;
 TestLib::TestLib(bool displayMsg) {
     // Anything you need when instantiatiating your object goes here
     // Pin definition
-    SD_CS = 5;
-
 }
 
 // Pretend this is one or more complext and involved functions you have written
@@ -30,6 +28,7 @@ int TestLib::begin(String header_) {
     Log.info(Header);
     if (Header.substring(0, 2) == "TC") {
         TCsetup();
+        heatingoff();
     } else {
         Serial.println("Set up for soil moisture");
         // RGsetup();
@@ -44,6 +43,7 @@ int TestLib::begin(String header_) {
 
     batTest();
     blinkGood();
+    initLogFile();
     return 1;
 }
 
@@ -203,7 +203,6 @@ if(SDError) Serial.println("FAIL");  //If card is inserted and still does not co
 }
 
 void TestLib::TCsetup() {
-    Serial.println("In TC Setup");
     /* Initialise the driver with I2C_ADDRESS and the default I2C bus. */
     if (! mcp.begin(I2C_ADDRESS)) {
         Serial.println("Thermocouple amplifier not found. Check wiring!");
@@ -252,26 +251,26 @@ void TestLib::TCsetup() {
 
 }
 
-void TestLib::heating(int val){
+void TestLib::heating(int val, float heatmin){
     pinMode(heatPin, OUTPUT);
     analogWrite(heatPin, val);
     Serial.print(getTime());
-    Serial.println(" Heating begins and will continue for 20 min");
-    delay(20*60*1000); // Heating for 10 minutes
+    char strBuf[50];
+    sprintf(strBuf, " Heating begins and will continue for %.2f min", heatmin);
+    Serial.println(strBuf);
+    delay(heatmin*60*1000);
 }
 
 void TestLib::batTest()
 {
 	if(getBatVoltage() < BatVoltageError) BatError = true; //Set error flag if below min voltage
-	// if(getBatPer() < BatPercentageWarning) BatWarning = true; //Set warning flag is below set percentage
 	Serial.print("Bat = ");
 	Serial.print(getBatVoltage());
 	Serial.print("V\t");
-	// Serial.print(getBatPer());
-	// Serial.println("%");
 }
 
 void TestLib::blinkGood() {
+    pinMode(BlueLED, OUTPUT);
     delay(2000);
     digitalWrite(BlueLED, HIGH);
     delay(5000);
@@ -309,17 +308,14 @@ void TestLib::dateTimeSD(uint16_t* date, uint16_t* time)
 	*time = FAT_TIME(selfPointer->Time_Date[3], selfPointer->Time_Date[4], selfPointer->Time_Date[5]);
 }
 
-void TestLib::addDataPoint(String (*update)(void)) //Reads new data and writes data to SD
+int TestLib::addDataPoint(String (*update)(void)) //Reads new data and writes data to SD
 {
 	String data = "";
 	data = (*update)(); //Run external update function
-	// pinMode(BlueLED, OUTPUT);
-	// digitalWrite(BlueLED, LOW); //ON
 	data = getOnBoardVals() + data; //Prepend on board readings
 	// Serial.println("Got OB Vals");  //DEBUG!
-	logStr(data);
-    Serial.println(data);
-	Serial.println("Logged Data"); //DEBUG!
+	Serial.println(data);
+    return logStr(data);
 }
 
 String TestLib::getOnBoardVals() 
@@ -339,7 +335,7 @@ float TestLib::getBatVoltage()
 
 double TestLib::getTCvoltage() 
 {
-    Serial.print("ADC: "); Serial.print(mcp.readADC() * 2); Serial.println(" uV");
+    // Serial.print("ADC: "); Serial.print(mcp.readADC() * 2); Serial.println(" uV");
     if (!(mcp.readThermocouple() == NAN)) {
         TCvoltage = mcp.readADC() * 2;
     }
@@ -348,7 +344,7 @@ double TestLib::getTCvoltage()
 
 void TestLib::Soilsetup(){
     pinMode(soilRelayPin, OUTPUT);
-    digitalWrite(soilRelayPin,HIGH); // HIGH - turns on heating bc it's "Normally On"
+    digitalWrite(soilRelayPin, HIGH); // HIGH - turns on excitation bc it's "Normally On"
     delay(5*1000); // Wait 5 seconds for the excitation power
 }
 
@@ -411,7 +407,7 @@ void TestLib::initLogFile()
     SD.chdir(SN);  //Move into specific numbered sub folder    
     SD.chdir("Logs"); //Move into the logs sub-folder
 
-    Serial.println("Supposed to be in Logs");
+    // Serial.println("Supposed to be in Logs");
 	//Perform same search, but do so inside of "SD:NW/sn/Logs"
     char NumCharArray[6];
     String FileName = "Log";
@@ -442,55 +438,53 @@ int TestLib::logStr(String val)
 	SD.chdir("Particle");  //Move into northern widget folder from root
 	SD.chdir(SN);  //Move into specific numbered sub folder
 	SD.chdir("Logs"); //Move into the logs sub-folder
-	File DataFile = SD.open(FileNameC, FILE_WRITE);
-
-	// if the file is available, write to it:
-	if (DataFile) {
+    File DataFile = SD.open(FileNameC, FILE_WRITE);
+ 	
+    if (DataFile) {
 		DataFile.println(val);
         DataFile.close();
-	    return 0;
+        Serial.print("Logged Data in "); Serial.println(FileNameC); //DEBUG!
+	    return 1;
 	}
 	// if the file isn't open, pop up an error:
 	else {
         Serial.println("Print Error");
-	    return -1;
+	    return 0;
 	}
-
-	// DataFile.close();
 }
 
-void TestLib::run(String (*update)(void), unsigned long logInterval) //Pass in function which returns string of data
-{
-	Serial.println("BANG!"); //DEBUG!
-	// Serial.println(millis()); //DEBUG!
-	if(NewLog) {
-		Serial.println("Log Started!"); //DEBUG
-		// LogEvent = true;
-		// unsigned long TempLogInterval = logInterval; //ANDY, Fix with addition of function??
-		delay(logInterval*1000); //DEBUG!
-		initLogFile(); //Start a new file each time log button is pressed
+// void TestLib::run(String (*update)(void), unsigned long logInterval) //Pass in function which returns string of data; This is NOT IN USE
+// {
+// 	Serial.println("BANG!"); //DEBUG!
+// 	// Serial.println(millis()); //DEBUG!
+// 	if(NewLog) {
+// 		Serial.println("Log Started!"); //DEBUG
+// 		// LogEvent = true;
+// 		// unsigned long TempLogInterval = logInterval; //ANDY, Fix with addition of function??
+// 		delay(logInterval*1000); //DEBUG!
+// 		initLogFile(); //Start a new file each time log button is pressed
 
-		//Add inital data point
-		addDataPoint(*update);
-		NewLog = false;  //Clear flag once log is started
-    	blinkGood();  //Alert user to start of log
-	}
+// 		//Add inital data point
+// 		addDataPoint(*update);
+// 		NewLog = false;  //Clear flag once log is started
+//     	blinkGood();  //Alert user to start of log
+// 	}
 
-	if(LogEvent) {
-		Serial.println("Log!"); //DEBUG!
-		// RTC.setAlarm(logInterval);  //Set/reset alarm //DEBUG!
-		addDataPoint(*update); //Write values to SD
-		LogEvent = false; //Clear log flag
-		//Serial.println("BANG!"); //DEBUG!
-	}
+// 	if(LogEvent) {
+// 		Serial.println("Log!"); //DEBUG!
+// 		// RTC.setAlarm(logInterval);  //Set/reset alarm //DEBUG!
+// 		addDataPoint(*update); //Write values to SD
+// 		LogEvent = false; //Clear log flag
+// 		//Serial.println("BANG!"); //DEBUG!
+// 	}
 
-	AwakeCount++;
-    delay(1);
+// 	AwakeCount++;
+//     delay(1);
 
-    // //NEED TO DEBUG SLEEP
-	// if(AwakeCount > 5) {
-	// //    AwakeCount = 0;
-	// 	// Serial.println(millis()); //DEBUG!
-	// 	// sleepNow();
-	// }
-}
+//     // //NEED TO DEBUG SLEEP
+// 	// if(AwakeCount > 5) {
+// 	// //    AwakeCount = 0;
+// 	// 	// Serial.println(millis()); //DEBUG!
+// 	// 	// sleepNow();
+// 	// }
+// }

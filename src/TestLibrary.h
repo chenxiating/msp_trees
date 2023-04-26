@@ -23,7 +23,7 @@ class TestLib {
 
         // Data reading
         int logStr(String val);
-        void addDataPoint(String (*update)(void));
+        int addDataPoint(String (*update)(void));
         void initLogFile();
 
         float getBatVoltage();
@@ -43,7 +43,7 @@ class TestLib {
         uint8_t soilRelayPin = D7;      // DOUBLE CHECK RELAY PIN
 
         // Heating and Excitation
-        void heating(int heatval);
+        void heating(int heatval, float heatmin);
         void Soilsetup();
         void heatingoff();
         void Soiloff();
