@@ -1,4 +1,4 @@
-/Users/xchen/Documents/Arduino/particle/test_rtc/target/2.3.0/argon//obj/./src/newlib_stubs.o: \
+/Users/xchen/Documents/Arduino/particle/msp_trees-main/target/2.3.0/argon//obj/./src/newlib_stubs.o: \
  src/newlib_stubs.cpp \
  ../../../modules/shared/nRF52840/inc/user-part/newlib_stubs.inc \
  /Users/xchen/.particle/toolchains/gcc-arm/9.2.1/arm-none-eabi/include/sys/types.h \

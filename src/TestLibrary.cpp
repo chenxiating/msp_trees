@@ -20,21 +20,14 @@ int TestLib::begin(String header_) {
     SN = id.c_str();
 
     Log.info("\n\n\nInitializing...\n");
-    delay(100);
+    delay(1000);
     getTime();
     Log.info("\nTimestamp = "+LogTimeDate);
 
     Header = header_;
     Log.info(Header);
-    if (Header.substring(0, 2) == "TC") {
-        TCsetup();
-        heatingoff();
-    } else {
-        Serial.println("Set up for soil moisture");
-        // RGsetup();
-    }
 
-    // //Sets up basic initialization required for the system
+    //Sets up basic initialization required for the system
 	selfPointer = this;
 
     SDsetup();
@@ -44,6 +37,14 @@ int TestLib::begin(String header_) {
     batTest();
     blinkGood();
     initLogFile();
+
+    if (Header.substring(0, 2) == "TC") {
+        TCsetup();
+        heatingoff();
+        Log.info("Set up for sap flux");
+    } else {
+        Log.info("Set up for soil moisture");
+    }
     return 1;
 }
 
@@ -156,7 +157,7 @@ void TestLib::clockTest()
 void TestLib::SDsetup() {
     getTime();
     SdFile::dateTimeCallback(dateTimeSD); //Setup SD file time setting
-    bool SDErrorTemp = false;
+    bool SDError = false;
 	// bool SD_Test = true;
 
     // SD_CS is pulled up: HIGH=1 if not present
@@ -168,7 +169,7 @@ void TestLib::SDsetup() {
 	if (!SD.begin(SD_CS)) {
         Log.warn(" NO CARD");
   	    OBError = true;
-  	    SDErrorTemp = true;
+  	    SDError = true;
 	} else {
     randomSeed(analogRead(D1)); 
     int RandVal = random(30557); //Generate a random number between 0 and 30557 (the number of words in Hamlet)
@@ -191,7 +192,7 @@ File DataWrite = SD.open("SDtest.txt", FILE_WRITE);
     	DataRead.read(TestDigits, RandLength);
 		  for(int i = 0; i < RandLength - 1; i++){ //Test random value string
 		    if(TestDigits[i] != RandDigits[i]) {
-		      SDErrorTemp = true;
+		      SDError = true;
 		      OBError = true;
 		    }
 		  }
@@ -252,13 +253,14 @@ void TestLib::TCsetup() {
 }
 
 void TestLib::heating(int val, float heatmin){
-    pinMode(heatPin, OUTPUT);
-    analogWrite(heatPin, val);
-    Serial.print(getTime());
-    char strBuf[50];
-    sprintf(strBuf, " Heating begins and will continue for %.2f min", heatmin);
-    Serial.println(strBuf);
-    delay(heatmin*60*1000);
+    if (SDError) {
+        Log.error("No SD card. Pause heating to conserve power.");
+    } else {
+        pinMode(heatPin, OUTPUT);
+        analogWrite(heatPin, val);
+        Log.info("%s Heating begins and will continue for %.2f min", (const char*) getTime(), heatmin);
+        delay(heatmin*60*1000);
+    }
 }
 
 void TestLib::batTest()
@@ -379,7 +381,10 @@ double TestLib::getVoltage(int pinInput)
 // }
 
 void TestLib::heatingoff(){
+    pinMode(heatPin, OUTPUT);
     analogWrite(heatPin,0);
+    // analogWrite(heatPin,50);
+    
 }
 
 void TestLib::Soiloff(){
@@ -443,12 +448,12 @@ int TestLib::logStr(String val)
     if (DataFile) {
 		DataFile.println(val);
         DataFile.close();
-        Serial.print("Logged Data in "); Serial.println(FileNameC); //DEBUG!
+        Log.info("Logged data in %s", FileNameC); //DEBUG!
 	    return 1;
 	}
 	// if the file isn't open, pop up an error:
 	else {
-        Serial.println("Print Error");
+        Log.warn("Print Error");
 	    return 0;
 	}
 }
