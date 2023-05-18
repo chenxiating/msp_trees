@@ -33,7 +33,7 @@ TestLib MyLogger;
 // Heating/logging to update
 int heatohm = 10;           // Heater wire's resistance
 float heatmin = 20;        // Heating duration, 20
-int logTime = 30;            // Logging interval, 30
+int logTime = 30;            // Logging interval (min), 30
 
 // Variables
 String Header; //Information header
@@ -49,25 +49,28 @@ float pwm = heatval*100/255;
 // Rain gauge
 volatile unsigned int TipCount = 0; //Global counter for tipping bucket 
 unsigned long Holdoff = 25; //25ms between bucket tips minimum
-const uint8_t intPin = TX; //TX for some, D2 for Orchard
+const uint8_t intPin = D2; //TX for some, D2 for Orchard
 
 void setup() {
-  // Header = "Soil Top [V], Soil Mid [V], Soil Bottom [V], Rain [in], ";
-  Header = "TC [uV]";
+  Header = "Soil Top [V], Soil Mid [V], Soil Bottom [V], Rain [in]";
+  // Header = "TC [uV]";
+  // Header = "Rain [in]";
   MyLogger.begin(Header); //Pass header info to logger
   RGsetup();
   Log.info("Finish initialization!"); // DEBUG!!
-  k = logData(logTime, 3);
-  check_SD(k);
+  // k = logData(logTime, 3);
+  // check_SD(k);
 }
 
 void loop() {
    if (Header.substring(0, 2) == "TC") {
     // Sap flux: Log data every 10 minutes, and 3 times each log. 
     k = logData(logTime, 3);
-  } else {
+  } else if (Header.substring(0, 4) == "Soil") {
     // Soil moisture: Log data every 15 minutes, and 3 times each log. 
     k = logData(logTime, 3);
+  } else if (Header.substring(0, 4) == "Rain") {
+    k = logData(logTime, 1);
   }
   check_SD(k);
 }
@@ -106,17 +109,17 @@ void excitation(){
   if (Header.substring(0, 2) == "TC") {
     Log.info("0.2W for %d Ohm heater, PWM is %.0f%% (%d/225).", heatohm, pwm, heatval);
     MyLogger.heating(heatval, heatmin); // default to heat for 20 minutes in the cpp file. 
-  } else {
+  } else if (Header.substring(0, 4) == "Soil") {
     MyLogger.Soilsetup();
-  }
+  } else {}
 }
 
 void poweroff(){
   if (Header.substring(0, 2) == "TC") {
     MyLogger.heatingoff(); // turn off heating
-  } else {
+  } else if (Header.substring(0, 4) == "Soil") {
     MyLogger.Soiloff(); // turn off relay pin
-  }
+  } else {}
   digitalWrite(D7, LOW);
   Serial.println("Power OFF");
 
@@ -127,20 +130,24 @@ String calc(){
     double volt;
     volt = MyLogger.getTCvoltage();
     return String(volt);
-  } else {
+  } else if (Header.substring(0, 4) == "Soil") {
     String rain;
     String soil;
     soil = MyLogger.getSoilvoltage();
     rain = getRain();
     return soil+","+rain;
-  }
+  } else if (Header.substring(0, 4) == "Rain") {
+    String rain;
+    rain = getRain();
+    return rain;
+  } else {}
 }
 
 // RAIN GAUGE CODE
 void RGsetup() {
-    pinMode(intPin, INPUT); // For rain gauge
+    pinMode(intPin, INPUT_PULLUP); // For rain gauge
     attachInterrupt(digitalPinToInterrupt(intPin), tip, FALLING);
-    pinMode(intPin, INPUT_PULLUP);
+    
 }
 
 void tip()
