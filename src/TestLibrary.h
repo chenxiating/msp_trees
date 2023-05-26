@@ -54,7 +54,7 @@ class TestLib {
         SdFat SD; 
         Adafruit_MCP9600 mcp;
 
-        // Linwood (all 3), Orchard's Park (top and mid), Highland (top and top)
+        // Linwood (all 3), Orchard's Park (top, mid and bottom), Highland (top and top)
         const uint8_t topPinIn = A0;
         const uint8_t midPinIn = A1;
         const uint8_t botPinIn = A2; 

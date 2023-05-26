@@ -10,7 +10,7 @@ TestLib::TestLib(bool displayMsg) {
 // Pretend this is one or more complext and involved functions you have written
 
 // Public Functions
-// --------------------------------------------
+// ----------------------------------,----------
 int TestLib::begin(String header_) {
     Log.info("Beginning logger initialization");
     // RTCsetup(); // ONLY USE DURING INITIAL SETUP!
@@ -43,7 +43,7 @@ int TestLib::begin(String header_) {
         heatingoff();
         Log.info("Set up for sap flux");
     } else {
-        Log.info("Set up for soil moisture");
+        Log.info("Set up for soil moisture or rain gauge");
     }
     return 1;
 }
@@ -340,6 +340,10 @@ double TestLib::getTCvoltage()
     // Serial.print("ADC: "); Serial.print(mcp.readADC() * 2); Serial.println(" uV");
     if (!(mcp.readThermocouple() == NAN)) {
         TCvoltage = mcp.readADC() * 2;
+        Serial.print("hot jct: ");
+        Serial.print(mcp.readThermocouple());
+        Serial.print(", cold jct: ");
+        Serial.println(mcp.readAmbient());
     }
     return TCvoltage;
 }
@@ -347,7 +351,7 @@ double TestLib::getTCvoltage()
 void TestLib::Soilsetup(){
     pinMode(soilRelayPin, OUTPUT);
     digitalWrite(soilRelayPin, HIGH); // HIGH - turns on excitation bc it's "Normally On"
-    delay(5*1000); // Wait 5 seconds for the excitation power
+    delay(2*1000); // Wait 2 seconds for the excitation power
 }
 
 String TestLib::getSoilvoltage() 
