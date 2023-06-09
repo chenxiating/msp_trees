@@ -333,9 +333,7 @@ float TestLib::getBatVoltage()
 	return BatVoltage;
 }
 
-
-
-double TestLib::getTCvoltage() 
+String TestLib::getTCvoltage() 
 {
     // Serial.print("ADC: "); Serial.print(mcp.readADC() * 2); Serial.println(" uV");
     if (!(mcp.readThermocouple() == NAN)) {
@@ -345,7 +343,7 @@ double TestLib::getTCvoltage()
         Serial.print(", cold jct: ");
         Serial.println(mcp.readAmbient());
     }
-    return TCvoltage;
+    return String(TCvoltage) + "," + String(mcp.readAmbient());
 }
 
 void TestLib::Soilsetup(){

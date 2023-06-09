@@ -4,7 +4,6 @@
 #include <SPI.h>
 #include "TestLibrary.h"
 
-
 SYSTEM_MODE(MANUAL);
 // SYSTEM_MODE(AUTOMATIC);
 SYSTEM_THREAD(ENABLED);
@@ -16,7 +15,7 @@ TestLib MyLogger;
 // Heating/logging to update
 int heatohm = 14;           // Heater wire's resistance
 float heatmin = 20;        // Heating duration, 20, when testing 1
-int logTime = 30;            // Logging interval (min), 30, when testing 1
+int logTime = 30;            // Logging interval (min), 30, 15 for rain, nnnnnwhen testing 1
 
 // Variables
 String Header; //Information header
@@ -25,19 +24,18 @@ int k = 0;
 // Data logger & Calculations
 long previousMillis = - logTime * 1000 * 60;        // will store last time data were logged
 // int heatval = sqrt(0.2*heatohm)/2.5*255; // FOR HOME-BREWED SENSORS
-int heatval = 60; // TEST::::   FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV
-// int heatval = 232;        // FOR DYNAMAX SENSORS, 232
+// int heatval = 70; // TEST::::   FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV
+int heatval = 232;        // FOR DYNAMAX SENSORS, 232
 float pwm = heatval*100/255;  
-
 
 // Rain gauge
 volatile unsigned int TipCount = 0; //Global counter for tipping bucket 
 unsigned long Holdoff = 25; //25ms between bucket tips minimum
-const uint8_t intPin = D2; //TX for some, D2 for Orchard, DB (Canopy)
+const uint8_t intPin = D2; //D2 for Orchard, DB (Canopy + Open), Linwood (Canopy) TX for some, 
 
 void setup() {
   // Header = "Soil Top [V], Soil Mid [V], Soil Bottom [V], Rain [in]";
-  Header = "TC [uV]";
+  Header = "TC [uV], Cold Jctn [C]";
   // Header = "Rain [in]";
   MyLogger.begin(Header); //Pass header info to logger
   RGsetup();
@@ -111,7 +109,7 @@ void poweroff(){
 
 String calc(){
   if (Header.substring(0, 2) == "TC") {
-    double volt;
+    String volt;
     volt = MyLogger.getTCvoltage();
     return String(volt);
   } else if (Header.substring(0, 4) == "Soil") {
