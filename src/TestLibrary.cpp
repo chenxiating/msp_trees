@@ -40,7 +40,8 @@ int TestLib::begin(String header_) {
 
     if (Header.substring(0, 2) == "TC") {
         TCsetup();
-        heatingoff();
+        pinMode(heatPin, OUTPUT);
+        analogWrite(heatPin,0);  // Turn off heating
         Log.info("Set up for sap flux");
     } else {
         Log.info("Set up for soil moisture or rain gauge");
@@ -248,18 +249,17 @@ void TestLib::TCsetup() {
     mcp.enable(true);
 
     Serial.println(F("------------------------------"));
-
-
 }
 
-void TestLib::heating(int val, float heatmin){
+void TestLib::heating(int val){
     if (SDError) {
         Log.error("No SD card. Pause heating to conserve power.");
     } else {
-        pinMode(heatPin, OUTPUT);
         analogWrite(heatPin, val);
-        Log.info("%s Heating begins and will continue for %.2f min", (const char*) getTime(), heatmin);
-        delay(heatmin*60*1000);
+        // Log.info("%s Heating begins and will continue for %.2f min", (const char*) getTime(), heatmin);
+        // Serial.println("In TestLib::heating");
+        // delay(60000);
+        // Serial.println("In TestLib::heating, EOS");
     }
 }
 
@@ -338,25 +338,26 @@ String TestLib::getTCvoltage()
     // Serial.print("ADC: "); Serial.print(mcp.readADC() * 2); Serial.println(" uV");
     if (!(mcp.readThermocouple() == NAN)) {
         TCvoltage = mcp.readADC() * 2;
-        Serial.print("hot jct: ");
-        Serial.print(mcp.readThermocouple());
-        Serial.print(", cold jct: ");
-        Serial.println(mcp.readAmbient());
+        // Serial.print("hot jct: ");
+        // Serial.print(mcp.readThermocouple());
+        // Serial.print(", cold jct: ");
+        // Serial.println(mcp.readAmbient());
     }
-    return String(TCvoltage) + "," + String(mcp.readAmbient());
+    return String(TCvoltage) + "," + String(mcp.readAmbient()) + "," + String(digitalRead(D7));
 }
 
 void TestLib::Soilsetup(){
     pinMode(soilRelayPin, OUTPUT);
     digitalWrite(soilRelayPin, HIGH); // HIGH - turns on excitation bc it's "Normally On"
-    delay(2*1000); // Wait 2 seconds for the excitation power
+    delay(1*1000); // Wait 1 seconds for the excitation power
 }
 
-String TestLib::getSoilvoltage() 
-{
+String TestLib::getSoilvoltage() {   
+    Soilsetup();
     double topVolt = getVoltage(topPinIn);
     double midVolt = getVoltage(midPinIn); 
     double botVolt = getVoltage(botPinIn);
+    digitalWrite(soilRelayPin,LOW); // Turn off soil excitation power
     return String(topVolt) + "," + String(midVolt) + "," + String(botVolt);
 }
 
@@ -365,32 +366,6 @@ double TestLib::getVoltage(int pinInput)
     pinMode(pinInput, INPUT);
     double volt = analogRead(pinInput) * (3.3 / 4096); 
     return volt;
-}
-
-// // NEED TO TEST getBatPer()
-// float TestLib::getBatPer()
-// {
-// 	//NOTE: Fit developed for Duracell AA, should work well for most alkalines, but no gaurentee given on accuracy
-// 	//From 305 to 100% capacity, should be accurate to within 1% (for data taken at 25C)
-// 	float A = -1.9809;
-// 	float B = 6.2931;
-// 	float C = -4.0063;
-// 	float val = getBatVoltage()/3.0; //Divide to get cell voltage
-// 	float Per = ((A*pow(val, 2) + B*val + C)*2 - 1)*100.0; //Return percentage of remaining battery energy
-// 	if(Per < 0) return 0;  //Do not allow return of non-sensical values
-// 	if(Per > 100) return 100;  //Is this appropriate? Float voltage could be higher than specified and still be correct
-// 	return Per;
-// }
-
-void TestLib::heatingoff(){
-    pinMode(heatPin, OUTPUT);
-    analogWrite(heatPin,0);
-    // analogWrite(heatPin,50);
-    
-}
-
-void TestLib::Soiloff(){
-    digitalWrite(soilRelayPin,LOW);
 }
 
 void TestLib::dirsetup(){
@@ -403,7 +378,7 @@ void TestLib::dirsetup(){
             if (!SD.exists("Logs")) {
                 SD.mkdir("Logs");
             }
-    }   
+        }   
     } 
 }
 

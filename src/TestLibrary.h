@@ -43,10 +43,8 @@ class TestLib {
         uint8_t soilRelayPin = D7;      // DOUBLE CHECK RELAY PIN
 
         // Heating and Excitation
-        void heating(int heatval, float heatmin);
+        void heating(int heatval); //, float heatmin);
         void Soilsetup();
-        void heatingoff();
-        void Soiloff();
 
     private:
     
