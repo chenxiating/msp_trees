@@ -14,8 +14,6 @@ void setup();
 void loop();
 void SM_logData(float logMinutes, int logTimes);
 void SM_sap_heating(int excitation_min, int off_min);
-void excitation();
-void poweroff();
 String calc();
 void RGsetup();
 void tip();
@@ -24,27 +22,29 @@ String getRain();
 SYSTEM_MODE(MANUAL);
 SYSTEM_THREAD(ENABLED);
 SerialLogHandler logHandler;
+TestLib MyLogger; // Define data logger
 
-// Define data logger
-TestLib MyLogger;
 
+//// ****** TO EDIT ******* \\\\
 // Heating/logging to update
 int heatohm = 14;           // Heater wire's resistance
 int heat_min = 20;        // Heating duration, 20, when testing 1
 int heat_off_min = 10;     //
-float log_min = 0.5;            // Logging interval (min), 15 for rain & sap, 30 for soil, when testing 1
-
-// Variables
-String Header; //Information header
-int logData_success = 0;
+float log_min = 5;            // Logging interval (min), 5 for sap, 15 for rain & soil, when testing 1,
 
 // Sap Flux Sensor Calculations
 // int heatval = sqrt(0.2*heatohm)/2.5*255; // FOR HOME-BREWED SENSORS
-int heatval = 100; // TEST::::   FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV
+int heatval = 70; // TEST: FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV
 // int heatval = 232;        // FOR DYNAMAX SENSORS, 232
 float pwm = heatval*100/255;  
+//// ***** END OF EDIT ***** \\\\
 
-// State Machine Variables
+//// REMEMBER to edit Header \\\\
+
+
+// Data Logger & State Machine Constants
+String Header; //Information header
+int logData_success = 0;
 long prev_log_millis = -log_min * 1000 * 60;        // will store last time data were logged
 unsigned int log_temp_millis = 0;
 long prev_excitation_millis = 0;        // will store last time data were logged
@@ -56,11 +56,11 @@ int state_prev_excitation = 0;
 // Rain gauge
 volatile unsigned int TipCount = 0; //Global counter for tipping bucket 
 unsigned long Holdoff = 25; //25ms between bucket tips minimum
-const uint8_t intPin = D2; //D2 for Orchard, DB (Canopy + Open), Linwood (Canopy) TX for some, 
+const uint8_t intPin = D2; //D2 for Orchard, DB (Canopy + Open), Linwood (Canopy); TX for some, 
 
 void setup() {
-  Header = "Soil Top [V], Soil Mid [V], Soil Bottom [V], Rain [in]";
-  // Header = "TC [uV], Cold Jctn [C], Heating, ";
+  // Header = "Soil Top [V], Soil Mid [V], Soil Bottom [V], Rain [in]";
+  Header = "TC [uV], Cold Jctn [C], Heating, ";
   // Header = "Rain [in]";
   MyLogger.begin(Header); //Pass header info to logger
   RGsetup();
@@ -71,9 +71,7 @@ void loop() {
    if (Header.substring(0, 2) == "TC") {
     // Sap flux: Log data every 10 minutes, and 3 times each log. 
     SM_sap_heating(heat_min, heat_off_min);
-    SM_logData(log_min, 3);
-    
-    // SM_excitation(heat_min, heat_off_min);
+    SM_logData(log_min, 1);
   } else if (Header.substring(0, 4) == "Soil") {
     // Soil moisture: Log data every 15 minutes, and 3 times each log. 
     SM_logData(log_min, 3);
@@ -111,44 +109,29 @@ void SM_sap_heating(int excitation_min, int off_min) {
   unsigned int off_interval_millis = off_min * 1000 * 60;
   switch (state_excitation) {
     case 0:
-      Log.info("Power ON for %d minutes. ", excitation_min);
+      Log.info("Power ON for %d minutes. A5 val: %d", excitation_min, heatval);
+      digitalWrite(D7, HIGH);
       state_excitation = 1;
     break;
     case 1:
-      excitation();
+      MyLogger.heating(heatval); // turn on heating
       if ((millis()-prev_excitation_millis) > excitation_interval_millis){
         prev_excitation_millis = millis();
-        Log.info("Power OFF for %d minutes. ", off_min);
+        Log.info("Power OFF for %d minutes, A5 val: %d", off_min, heatval);
+        digitalWrite(D7, LOW);
         state_excitation = 2;
       }
     break;
     case 2:
-      poweroff();
+      analogWrite(A5,0);  // Turn off heating
       if ((millis()-prev_excitation_millis) > off_interval_millis){
         prev_excitation_millis = millis();
         Log.info("Power ON for %d minutes. ", excitation_min);
+        digitalWrite(D7, HIGH);
         state_excitation = 1;
       }
     break;
   }
-}
-
-void excitation(){
-  digitalWrite(D7, HIGH);
-  if (Header.substring(0, 2) == "TC") {
-    MyLogger.heating(heatval); // default to heat for 20 minutes in the cpp file. 
-//   } else if (Header.substring(0, 4) == "Soil") {
-//     MyLogger.Soilsetup();
-  } else {}
-}
-
-void poweroff(){
-  digitalWrite(D7, LOW);
-  if (Header.substring(0, 2) == "TC") {
-    MyLogger.heatingoff(); // turn off heating
-  } else if (Header.substring(0, 4) == "Soil") {
-    MyLogger.Soiloff(); // turn off relay pin
-  } else {}
 }
 
 String calc(){
@@ -173,7 +156,6 @@ String calc(){
 void RGsetup() {
     pinMode(intPin, INPUT_PULLUP); // For rain gauge
     attachInterrupt(digitalPinToInterrupt(intPin), tip, FALLING);
-    
 }
 
 void tip()
@@ -181,6 +163,7 @@ void tip()
 	static unsigned long TimeLocal = millis(); //Protect the system from rollover errors
 	if((millis() - TimeLocal) > Holdoff) {
 		TipCount++; //Increment global counter 
+    Serial.println("Tip");
 	}
 	//Else do nothing
 	TimeLocal = millis(); //Update the local time
@@ -189,8 +172,8 @@ void tip()
 String getRain() 
 {
 	float Val1 = TipCount*0.01;  //Account per tip (in)
-  Serial.print("Tip Count: "); // DEBUG!
-  Serial.println(TipCount); // DEBUG!
+  // Serial.print("Tip Count: "); // DEBUG!
+  // Serial.println(TipCount); // DEBUG!
 	TipCount = 0; //Clear count with each update 
 	return String(Val1);
 }
