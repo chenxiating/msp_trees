@@ -4,27 +4,30 @@
 #include <SPI.h>
 #include "TestLibrary.h"
 
-SYSTEM_MODE(MANUAL);
+SYSTEM_MODE(AUTOMATIC);// 
+// SYSTEM_MODE(MANUAL);
 SYSTEM_THREAD(ENABLED);
 SerialLogHandler logHandler;
 TestLib MyLogger; // Define data logger
 
 
-//// ****** TO EDIT ******* \\\\
+//****** TO EDIT ******* //
+//** REMEMBER to edit eventName **//
+// This is the event name to publish
+String eventName = "Sap"; // "Sap", "Rain", "Soil"
 // Heating/logging to update
 int heatohm = 14;           // Heater wire's resistance
-int heat_min = 30;        // Heating duration, 20, when testing 1
-int heat_off_min = 0;     //
-float log_min = 60;            // Logging interval (min), 5 for sap, 15 for rain & soil, when testing 1,
+int heat_min = 1;        // Heating duration, 20, when testing 1
+int heat_off_min = 1;     //
+float log_min = 0.5;            // Logging interval (min), 5 for sap, 15 for rain & soil, when testing 1,
 
 // Sap Flux Sensor Calculations
 // int heatval = sqrt(0.2*heatohm)/2.5*255; // FOR HOME-BREWED SENSORS
-// int heatval = 60; // TEST: FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV (120 should be 0.2 mW)
-int heatval = 232;        // FOR DYNAMAX SENSORS, 232
+int heatval = 20; // TEST: FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV (120 should be 0.2 mW)
+// int heatval = 232;        // FOR DYNAMAX SENSORS, 232
 float pwm = heatval*100/255;  
-//// ***** END OF EDIT ***** \\\\
-
-//// REMEMBER to edit Header \\\\
+//***** END OF EDIT *****//
+//** REMEMBER to edit eventName **//
 
 
 // Data Logger & State Machine Constants
@@ -44,9 +47,14 @@ unsigned long Holdoff = 25; //25ms between bucket tips minimum
 const uint8_t intPin = D2; //D2 for Orchard, DB (Canopy + Open), Linwood (Canopy); TX for some, 
 
 void setup() {
-  Header = "Soil Top [V], Soil Mid [V], Soil Bottom [V], Rain [in]";
-  // Header = "TC [uV], Cold Jctn [C], Heating, ";
-  // Header = "Rain [in]";
+  if (eventName == "Soil") {
+    Header = "Soil Top [V], Soil Mid [V], Soil Bottom [V], Rain [in]";
+  } else if (eventName == "Sap") {
+    Header = "TC [uV], Cold Jctn [C], Heating, ";
+  } else if (eventName == "Rain") {
+    Header = "Rain [in]";
+  }
+  
   MyLogger.begin(Header); //Pass header info to logger
   RGsetup();
   Log.info("Data are logged every %.1f minutes. ", log_min);
@@ -135,7 +143,9 @@ String calc(){
     String rain;
     rain = getRain();
     return rain;
-  } else {}
+  } else {
+    return "Error";
+  }
 }
 
 // RAIN GAUGE CODE

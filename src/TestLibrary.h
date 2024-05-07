@@ -34,6 +34,7 @@ class TestLib {
         // Data logging
         void logSoil(int logInterval, int logTimes, String (*update)(void));
         void loopSap(int logInterval, int logTimes, String (*update)(void));
+        void publishData(String addDataPoint_output);
         
         // Pin definitions
 		uint8_t SD_CS = 5;
@@ -51,6 +52,7 @@ class TestLib {
         RTC_PCF8523 rtc;
         SdFat SD; 
         Adafruit_MCP9600 mcp;
+        FuelGauge fuel;
 
         // Linwood (all 3), Orchard's Park (top, mid and bottom), Highland (top and top)
         const uint8_t topPinIn = A0;

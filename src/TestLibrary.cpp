@@ -316,8 +316,30 @@ int TestLib::addDataPoint(String (*update)(void)) //Reads new data and writes da
 	data = (*update)(); //Run external update function
 	data = getOnBoardVals() + data; //Prepend on board readings
 	// Serial.println("Got OB Vals");  //DEBUG!
-	Serial.println(data);
+	Log.info(data);
+    publishData(data);
     return logStr(data);
+}
+
+void TestLib::publishData(String addDataPoint_output) // publish data on Particle Cloud
+{
+  // Make sure we're cloud connected before publishing
+  if (Particle.connected())
+  { 
+    String myID = System.deviceID();
+    addDataPoint_output = addDataPoint_output.replace("/","");
+    addDataPoint_output = addDataPoint_output.replace(":","");
+    addDataPoint_output = addDataPoint_output.replace(" ","");
+    char eventData [100];
+    sprintf(eventData, "[%s]", addDataPoint_output.c_str());
+    Serial.println(eventData);
+    Particle.publish(myID, eventData, PRIVATE);
+    // Particle.publish(myID, addDataPoint_output, PRIVATE);
+  }
+  else
+  {
+    Log.info("not cloud connected");
+  }
 }
 
 String TestLib::getOnBoardVals() 
@@ -328,8 +350,8 @@ String TestLib::getOnBoardVals()
 }
 
 float TestLib::getBatVoltage()
-{
-	float BatVoltage = analogRead(BATT) * 0.0011224;
+{   
+    float BatVoltage = fuel.getVCell();
 	return BatVoltage;
 }
 
