@@ -4,10 +4,9 @@
 #include <SPI.h>
 #include "TestLibrary.h"
 
-SYSTEM_MODE(AUTOMATIC);// 
+SYSTEM_MODE(SEMI_AUTOMATIC);// 
 // SYSTEM_MODE(MANUAL);
 SYSTEM_THREAD(ENABLED);
-SerialLogHandler logHandler;
 TestLib MyLogger; // Define data logger
 
 
