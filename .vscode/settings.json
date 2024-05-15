@@ -2,9 +2,15 @@
     "extensions.ignoreRecommendations": true,
     "C_Cpp.default.configurationProvider": "particle.particle-vscode-core",
     "files.associations": {
-        "*.ino": "cpp"
+        "*.ino": "cpp",
+        "array": "cpp",
+        "span": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "vector": "cpp",
+        "ranges": "cpp"
     },
     "particle.targetPlatform": "boron",
     "particle.firmwareVersion": "1.4.4",
-    "particle.targetDevice": "e00fce68cab1396838bc55be"
+    "particle.targetDevice": "e00fce68a558efe37c9bed68"
 }

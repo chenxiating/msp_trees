@@ -23,7 +23,7 @@ class TestLib {
 
         // Data reading
         int logStr(String val);
-        int addDataPoint(String (*update)(void));
+        int addDataPoint(String (*update)(void), bool publishNow);
         void initLogFile();
 
         float getBatVoltage();

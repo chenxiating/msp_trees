@@ -12,7 +12,7 @@
 
 void setup();
 void loop();
-void SM_logData(float logMinutes, int logTimes);
+void SM_logData(float logMinutes, float publishMinutes, int logTimes);
 void SM_sap_heating(int excitation_min, int off_min);
 String calc();
 void RGsetup();
@@ -31,30 +31,31 @@ TestLib MyLogger; // Define data logger
 // This is the event name to publish
 String eventName = "Sap"; // "Sap", "Rain", "Soil"
 // Heating/logging to update
-int heatohm = 14;           // Heater wire's resistance
-int heat_min = 1;        // Heating duration, 20, when testing 1
-int heat_off_min = 1;     //
-float log_min = 0.5;            // Logging interval (min), 5 for sap, 15 for rain & soil, when testing 1,
+int heatohm = 12;           // Heater wire's resistance
+int heat_min = 30;        // Heating duration, 20, when testing 1
+int heat_off_min = 30;     //
+float log_min = 5;            // Logging interval (min), 5 for sap, 15 for rain & soil, when testing 1,
+float publish_min = 30; // publish interval (10 min) to upload to Particle Cloud, while testing 1. Inactive now. 
 
 // Sap Flux Sensor Calculations
 // int heatval = sqrt(0.2*heatohm)/2.5*255; // FOR HOME-BREWED SENSORS
-int heatval = 20; // TEST: FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV (120 should be 0.2 mW)
-// int heatval = 232;        // FOR DYNAMAX SENSORS, 232
+// int heatval = 100; // TEST: FOR HOME-BREWED SENSORS, Keep temp diff to be 550-600 uV (120 should be 0.2 mW)
+int heatval = 232;        // FOR DYNAMAX SENSORS, 232
 float pwm = heatval*100/255;  
 //***** END OF EDIT *****//
 //** REMEMBER to edit eventName **//
-
-
 // Data Logger & State Machine Constants
 String Header; //Information header
 int logData_success = 0;
 long prev_log_millis = -log_min * 1000 * 60;        // will store last time data were logged
-unsigned int log_temp_millis = 0;
+long prev_publish_millis = -(publish_min-heat_min) * 1000 * 60;        // will store last time data were published
+// long prev_publish_millis = 0;        // will store last time data were published
 long prev_excitation_millis = 0;        // will store last time data were logged
 int state_log = 0;
 int state_prev_log = 0;
 int state_excitation = 0;
 int state_prev_excitation = 0;
+int publishNow = 1;
 
 // Rain gauge
 volatile unsigned int TipCount = 0; //Global counter for tipping bucket 
@@ -77,31 +78,37 @@ void setup() {
 }
 
 void loop() {
-   if (Header.substring(0, 2) == "TC") {
+   if (eventName == "Sap") {
     // Sap flux: Log data every 10 minutes, and 3 times each log. 
     SM_sap_heating(heat_min, heat_off_min);
-    SM_logData(log_min, 1);
-  } else if (Header.substring(0, 4) == "Soil") {
+    SM_logData(log_min, publish_min, 1);
+  } else if (eventName == "Soil") {
     // Soil moisture: Log data every 15 minutes, and 3 times each log. 
-    SM_logData(log_min, 3);
-  } else if (Header.substring(0, 4) == "Rain") {
-    SM_logData(log_min, 1);
+    SM_logData(log_min, publish_min, 3);
+  } else if (eventName == "Rain") {
+    SM_logData(log_min, publish_min, 1);
   }
 }
 
-void SM_logData(float logMinutes, int logTimes){
+void SM_logData(float logMinutes, float publishMinutes, int logTimes){
   state_prev_log = state_log; 
   unsigned int log_interval_millis = logMinutes * 1000 * 60;
+  unsigned int pub_interval_millis = publishMinutes * 1000 * 60;
   switch (state_log) {
     case 0:
       state_log = 1;
     break;
     case 1:
-      if ((millis() - prev_log_millis) > log_interval_millis) {
+      if ((millis() - prev_log_millis) >= log_interval_millis) {
         // Log.info("Data are logged for %d times every %.1f minutes. ", logTimes, logMinutes);
         prev_log_millis = millis();
+        if ((millis() - prev_publish_millis) >= pub_interval_millis){
+            prev_publish_millis = millis();
+            publishNow = 1;
+          }
         for (int i=0; i<logTimes; i++) {
-          logData_success = MyLogger.addDataPoint(calc);  // Add data point
+          logData_success = MyLogger.addDataPoint(calc, publishNow);  // Add data point
+          publishNow = 0;
         }
         if (!logData_success){
           Log.error("We don't have a SD card, reset!!"); 

@@ -16,8 +16,7 @@ int TestLib::begin(String header_) {
     // RTCsetup(); // ONLY USE DURING INITIAL SETUP!
     rtc.begin();
     
-    String id = System.deviceID();
-    SN = id.c_str();
+    SN = System.deviceID().c_str();
 
     Log.info("\n\n\nInitializing...\n");
     delay(1000);
@@ -310,14 +309,17 @@ void TestLib::dateTimeSD(uint16_t* date, uint16_t* time)
 	*time = FAT_TIME(selfPointer->Time_Date[3], selfPointer->Time_Date[4], selfPointer->Time_Date[5]);
 }
 
-int TestLib::addDataPoint(String (*update)(void)) //Reads new data and writes data to SD
+int TestLib::addDataPoint(String (*update)(void), bool publishNow) //Reads new data and writes data to SD
 {
 	String data = "";
 	data = (*update)(); //Run external update function
 	data = getOnBoardVals() + data; //Prepend on board readings
 	// Serial.println("Got OB Vals");  //DEBUG!
 	Log.info(data);
-    publishData(data);
+    if (publishNow) {
+        publishData(data);
+    }
+    
     return logStr(data);
 }
 
@@ -326,14 +328,15 @@ void TestLib::publishData(String addDataPoint_output) // publish data on Particl
   // Make sure we're cloud connected before publishing
   if (Particle.connected())
   { 
-    String myID = System.deviceID();
+    // String myID = System.deviceID();
     addDataPoint_output = addDataPoint_output.replace("/","");
     addDataPoint_output = addDataPoint_output.replace(":","");
     addDataPoint_output = addDataPoint_output.replace(" ","");
     char eventData [100];
     sprintf(eventData, "[%s]", addDataPoint_output.c_str());
-    Serial.println(eventData);
-    Particle.publish(myID, eventData, PRIVATE);
+    Log.info("Data published on Cloud");
+    Particle.publish("Field_2024", eventData, PRIVATE);
+    
     // Particle.publish(myID, addDataPoint_output, PRIVATE);
   }
   else
