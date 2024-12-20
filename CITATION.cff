@@ -9,7 +9,7 @@ authors:
 - family-names: "Wickert"
   given-names: "Andrew"
   orcid: "https://orcid.org/0000-0002-9545-3365"
-title:chenxiating/msp_trees: Pre-release v0.1.0
-version: v0.1.0
+title: "chenxiating/msp_trees: Pre-release v0.1.0"
+version: 0.1.0
 date-released: 2024-11-26
 url: "https://doi.org/10.5281/zenodo.14219619"
