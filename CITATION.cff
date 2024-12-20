@@ -1,7 +1,15 @@
 cff-version: 1.1.0
 message: "If you use this software, please cite it as below."
-authors: Chen, Xiating; Schulz, Bobby; Wickert, Andrew
-orcid: https://orcid.org/0000-0002-4578-9071; https://orcid.org/0000-0002-9545-3365
+authors: 
+- family-names: "Chen"
+  given-names: "Xiating"
+  orcid: "https://orcid.org/0000-0002-4578-9071"
+- family-names: "Schulz"
+  given-names: "Bobby"
+- family-names: "Wickert"
+  given-names: "Andrew"
+  orcid: "https://orcid.org/0000-0002-9545-3365"
 title:chenxiating/msp_trees: Pre-release v0.1.0
 version: v0.1.0
 date-released: 2024-11-26
+url: "https://doi.org/10.5281/zenodo.14219619"
